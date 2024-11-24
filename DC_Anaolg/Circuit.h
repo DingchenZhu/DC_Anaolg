@@ -130,7 +130,7 @@ private:
         int ND, NG, NS;
         string modelID;
         double width, length;
-        bool isPMOS;    // 用来判断是否为PMOS管
+        bool isNMOS;    // 用来判断是否为NMOS管
     };
 
     struct MOSFETModel

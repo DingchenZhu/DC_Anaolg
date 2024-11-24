@@ -87,40 +87,44 @@ void Circuit::buildYMatrix()
         // 计算小信号参数:此处考虑到NMOS和PMOS不同处理方法，添加判断逻辑
         //double VGS = NodeVoltage[NG] - NodeVoltage[NS];
         //double VDS = NodeVoltage[ND] - NodeVoltage[NS];
-        double VGS = mosfet.isPMOS
-            ? (NodeVoltage[NS] - NodeVoltage[NG]) // PMOS: VGS = V(S) - V(G)
-            : (NodeVoltage[NG] - NodeVoltage[NS]); // NMOS: VGS = V(G) - V(S)
-        double VDS = mosfet.isPMOS
-            ? (NodeVoltage[NS] - NodeVoltage[ND]) // PMOS: VDS = V(S) - V(D)
-            : (NodeVoltage[ND] - NodeVoltage[NS]); // NMOS: VDS = V(D) - V(S)
+        double VGS = mosfet.isNMOS
+            ? (NodeVoltage[NG] - NodeVoltage[NS])  // NMOS: VGS = V(G) - V(S)
+            : (NodeVoltage[NS] - NodeVoltage[NG]); // PMOS: VGS = V(S) - V(G)
+        double VDS = mosfet.isNMOS
+            ? (NodeVoltage[ND] - NodeVoltage[NS])  // NMOS: VDS = V(D) - V(S)
+            : (NodeVoltage[NS] - NodeVoltage[ND]); // PMOS: VGS = V(S) - V(D)
 
         double g_m = 0.0, g_ds = 0.0;
-
-        if (mosfet.isPMOS ? (VGS < model.VT) : (VGS > model.VT)) {
-            if (mosfet.isPMOS ? (VDS < (VGS - model.VT)) : (VDS > (VGS - model.VT))) {
-                // 饱和区
-                g_m = model.MU * model.COX * (mosfet.width / mosfet.length) * std::abs(VGS - model.VT);
-                g_ds = model.LAMBDA * g_m * std::abs(VDS);
-            }
-            else {
-                // 线性区
-                g_m = model.MU * model.COX * (mosfet.width / mosfet.length) * std::abs(VDS);
-                g_ds = g_m / std::abs(VGS - model.VT);
+        if(mosfet.isNMOS ? (VGS > model.VT) : (VGS > -model.VT))
+        {
+	        if(mosfet.isNMOS ? (VDS > (VGS - model.VT)) : (VDS > (VGS + model.VT)))
+	        {
+		        //饱和区
+                g_m = model.MU * model.COX * (mosfet.width / mosfet.length) * abs(VGS - model.VT) * (1 + model.LAMBDA * VDS);
+                g_ds = (model.LAMBDA * model.MU * model.COX * (mosfet.width / mosfet.length) * (VGS - model.VT) * (VGS - model.VT)) / 2;
+	        }
+            else
+            {
+	            //线性区
+                g_m = model.MU * model.COX * (mosfet.width / mosfet.length) * abs(VDS);
+                g_ds = model.MU * model.COX * (mosfet.width / mosfet.length) * abs(VGS - model.VT - VDS);
             }
         }
 
-        // 将 g_m 和 g_ds 添加到导纳矩阵中
-        if (ND >= 0 && ND < numNodes) {
+        // 添加到导纳矩阵中
+        if( ND >= 0 && ND < numNodes)
+        {
             YMatrix(ND, ND) += g_ds;
             if (NS >= 0 && NS < numNodes) YMatrix(ND, NS) -= g_ds;
-            if (NG >= 0 && NG < numNodes) YMatrix(ND, NG) += (mosfet.isPMOS ? -g_m : g_m);
+            if (NG >= 0 && NG < numNodes) YMatrix(ND, NG) += (mosfet.isNMOS ? g_m : -g_m);
+
         }
-        if (NS >= 0 && NS < numNodes) {
+        if( NS >= 0 && NS < numNodes)
+        {
             YMatrix(NS, NS) += g_ds;
             if (ND >= 0 && ND < numNodes) YMatrix(NS, ND) -= g_ds;
-            if (NG >= 0 && NG < numNodes) YMatrix(NS, NG) -= (mosfet.isPMOS ? -g_m : g_m);
+            if (NG >= 0 && NG < numNodes) YMatrix(NS, NG) -= (mosfet.isNMOS ? g_m : -g_m);
         }
-    }
 
     // 关于独立电压源的影响
     int voltageSourceIndex = numNodes; // 电压源方程从 numNodes 开始
@@ -142,8 +146,10 @@ void Circuit::buildYMatrix()
         // 电压源的值会加入到右端电流向量中
         voltageSourceIndex++;
     }
+    }
 }
 
+// 构建电流向量
 void Circuit::buildCurrentVector()
 {
     int size = nodes.size();
@@ -171,8 +177,13 @@ void Circuit::buildCurrentVector()
         // 添加电压源电流的占位变量（通过导纳矩阵约束）
         CurrentVector[voltageIndexOffset + i] = 0; // 由于电流未知，直接占位
     }
+}
 
-    //// 是否需要其他受控源的贡献？
+
+
+
+
+	//// 是否需要其他受控源的贡献？
     //for (const auto& vccs : vccsSources) {
     //    int n1 = vccs.node1;           // 输出正极
     //    int n2 = vccs.node2;           // 输出负极
@@ -189,5 +200,3 @@ void Circuit::buildCurrentVector()
     //    if (n2 >= 0) CurrentVector(n2) -= currentContribution;
     //}
     //// 诸如此类，待完善
-
-}
