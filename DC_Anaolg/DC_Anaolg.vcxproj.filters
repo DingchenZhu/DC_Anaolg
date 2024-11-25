@@ -21,6 +21,12 @@
     <ClCompile Include="helper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="NetListParser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NetParser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Circuit.h">

@@ -14,6 +14,7 @@ class Circuit
 public:
     // 添加元件：电源、电阻、电容、电感，MOSFET，MOSFET模型
     // 对于电源，我们在这里只进行DC分析，因此传入参数只有节点和数值大小
+    friend void printParsedCircuit(const Circuit& circuit);
     void addNode(const string& name);
     void addVoltageSource(const string& name, const string& node1, const string& node2, double voltage);
     void addResistor(const string& name, const string& node1, const string& node2, double resistance);

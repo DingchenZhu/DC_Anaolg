@@ -131,6 +131,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="helper.cpp" />
+    <ClCompile Include="NetListParser.cpp" />
+    <ClCompile Include="NetParser.cpp" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
